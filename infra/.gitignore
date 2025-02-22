@@ -1,0 +1,6 @@
+# Terraform secrets
+*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform*.lock*
+.terraform
