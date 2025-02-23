@@ -1,0 +1,7 @@
+name: foxnhound
+description: Infra for foxnhound project
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: azure-go

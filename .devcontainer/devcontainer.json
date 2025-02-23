@@ -7,8 +7,9 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-azuretools.vscode-azurefunctions",
-				"hashicorp.terraform"
+				// "ms-azuretools.vscode-azurefunctions",
+				// "hashicorp.terraform",
+				"pulumi.pulumi-vscode-tools"
 			]
 		}
 	},
