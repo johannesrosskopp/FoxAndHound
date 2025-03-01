@@ -5,6 +5,7 @@ import (
 	"github.com/pulumi/pulumi-azure-native-sdk/network/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/resources/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/sql/v2"
+	"github.com/pulumi/pulumi-azure-native-sdk/web/v2"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
@@ -44,9 +45,113 @@ func main() {
 			return returnArgs.err
 		}
 
+		backendArgs := createBackend(WebAppArgs{
+			ctx:            ctx,
+			resourceGroup:  resourceGroup,
+			vnet:           vnet,
+			appServicePlan: nil,
+		})
+		if backendArgs.err != nil || backendArgs.appServicePlan == nil {
+			return backendArgs.err
+		}
+
+		webAppArgs := createFrontend(WebAppArgs{
+			ctx:            ctx,
+			resourceGroup:  resourceGroup,
+			vnet:           nil,
+			appServicePlan: backendArgs.appServicePlan,
+		})
+		if webAppArgs.err != nil {
+			return webAppArgs.err
+		}
+
 		return nil
 	})
 
+}
+
+type WebAppArgs struct {
+	ctx            *pulumi.Context
+	resourceGroup  *resources.ResourceGroup
+	vnet           *network.VirtualNetwork
+	appServicePlan *web.AppServicePlan
+}
+
+type WebAppReturn struct {
+	webapp         *web.WebApp
+	appServicePlan *web.AppServicePlan
+	err            error
+}
+
+func createBackend(args WebAppArgs) WebAppReturn {
+
+	// Cretae a new delegated subnet
+	subnet, err := network.NewSubnet(args.ctx, "foxnhound-sn-backend", &network.SubnetArgs{
+		Delegations: network.DelegationArray{
+			&network.DelegationArgs{
+				Name:        pulumi.String("backendDelegation"),
+				ServiceName: pulumi.String("Microsoft.Web/serverFarms"),
+			},
+		},
+		ResourceGroupName:  args.resourceGroup.Name,
+		VirtualNetworkName: args.vnet.Name,
+		AddressPrefix:      pulumi.String("10.0.2.0/24"),
+	})
+	if err != nil {
+		return WebAppReturn{err: err}
+	}
+
+	if args.appServicePlan == nil {
+		// Create an App Service Plan if wen need to
+		args.appServicePlan, err = web.NewAppServicePlan(args.ctx, "appServicePlan", &web.AppServicePlanArgs{
+			ResourceGroupName: args.resourceGroup.Name,
+			Location:          args.resourceGroup.Location,
+			Sku: &web.SkuDescriptionArgs{
+				Name:     pulumi.String("B1"),
+				Tier:     pulumi.String("Basic"),
+				Capacity: pulumi.Int(1),
+			},
+			Reserved: pulumi.Bool(true), // Reserved indicates Linux
+		})
+		if err != nil {
+			return WebAppReturn{err: err}
+		}
+	}
+
+	// Create a Web App running a container on Linux
+	webApp, err := web.NewWebApp(args.ctx, "foxnhound-backend", &web.WebAppArgs{
+		ResourceGroupName: args.resourceGroup.Name,
+		Location:          args.resourceGroup.Location,
+		ServerFarmId:      args.appServicePlan.ID(),
+		SiteConfig: &web.SiteConfigArgs{
+			AlwaysOn:       pulumi.Bool(true),
+			LinuxFxVersion: pulumi.String("DOCKER|nginx:latest"),
+		},
+		VirtualNetworkSubnetId: subnet.ID(),
+	})
+	if err != nil {
+		return WebAppReturn{err: err}
+	}
+
+	return WebAppReturn{webapp: webApp, appServicePlan: args.appServicePlan}
+}
+
+func createFrontend(args WebAppArgs) WebAppReturn {
+	// Create a Web App running a container on Linux
+	webApp, err := web.NewWebApp(args.ctx, "foxnhound-webapp", &web.WebAppArgs{
+		ResourceGroupName: args.resourceGroup.Name,
+		Location:          args.resourceGroup.Location,
+		ServerFarmId:      args.appServicePlan.ID(),
+		SiteConfig: &web.SiteConfigArgs{
+			AlwaysOn:       pulumi.Bool(true),
+			LinuxFxVersion: pulumi.String("DOCKER|nginx:latest"),
+		},
+	})
+	if err != nil {
+		return WebAppReturn{err: err}
+	}
+
+	return WebAppReturn{webapp: webApp}
 }
 
 type MySqlServerArgs struct {
@@ -63,7 +168,7 @@ type MySqlServerReturn struct {
 func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 
 	// Cretae a new delegated subnet
-	subnet, err := network.NewSubnet(args.ctx, "delegatedSubnet", &network.SubnetArgs{
+	subnet, err := network.NewSubnet(args.ctx, "foxnhound-sn-db", &network.SubnetArgs{
 		Delegations: network.DelegationArray{
 			&network.DelegationArgs{
 				ServiceName: pulumi.String("Microsoft.DBforMySQL/flexibleServers"),
