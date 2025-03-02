@@ -174,6 +174,8 @@ github.com/pulumi/pulumi-azure-native-sdk/v2 v2.89.0 h1:kAi8Fkk6kFtdUMTjSXsHVT+e
 github.com/pulumi/pulumi-azure-native-sdk/v2 v2.89.0/go.mod h1:mHvL40zNTlhoAQxiVxhrfK8WMGBeKyqSkilbdk6bHcA=
 github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.88.0 h1:flKnNdJ+/gxddBWkkQ8Kv8xuSQeXWXEXRHpR5/7SymQ=
 github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.88.0/go.mod h1:opVlbuH6gYUiI4j6LWjXR/QSR85YRlcLz3Jm05Qe0Cg=
+github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.89.0 h1:YWkoTmWis5m0eEByJ7+CRn7xVL/SGJpqh9yGq0JoYLI=
+github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.89.0/go.mod h1:1j6fJ9FVixA0ndoi/11pglNERlpK0Cc/E60TuZzDlBA=
 github.com/pulumi/pulumi/sdk/v3 v3.117.0 h1:ImIsukZ2ZIYQG94uWdSZl9dJjJTosQSTsOQTauTNX7U=
 github.com/pulumi/pulumi/sdk/v3 v3.117.0/go.mod h1:kNea72+FQk82OjZ3yEP4dl6nbAl2ngE8PDBc0iFAaHg=
 github.com/pulumi/pulumi/sdk/v3 v3.150.0 h1:w5df9oOxqmVfsokWNb901/AvJEFjgBGrG9rgsWFlsJI=

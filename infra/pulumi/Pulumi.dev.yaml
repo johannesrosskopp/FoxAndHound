@@ -9,3 +9,7 @@ config:
   foxnhound:vm-adminLogin: exampleadmin
   foxnhound:vm-adminSecret:
     secure: AAABABEWbst9P/sb0BG/DyDUT2DTgr1Rnz7els8kuQoHtiC5jxgp/nBc5jeKO/ojkS9VMkQib51ExY6WlGMB
+  foxnhound:backend-container-registry-url: https://index.docker.io/v1
+  foxnhound:ackend-container-registry-password:
+    secure: AAABAPwDzyyPCZ6cJRz37iw9SAl1XYRcgOZThUv5tSjI3tpD0c4Y4HxoEWe+FRYDSoeoA2XlrVydr4TR1f3X0QwgZpc=
+  foxnhound:backend-container-registry-login: johannesrosskopp

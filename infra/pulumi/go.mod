@@ -68,7 +68,7 @@ require (
 	github.com/pulumi/pulumi-azure-native-sdk/network/v2 v2.88.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/sql/v2 v2.88.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/v2 v2.89.0 // indirect
-	github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.88.0 // indirect
+	github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.89.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect

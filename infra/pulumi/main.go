@@ -7,8 +7,8 @@ import (
 	"github.com/pulumi/pulumi-azure-native-sdk/resources/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/sql/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/web/v2"
-	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 const (
@@ -202,6 +202,7 @@ type WebAppReturn struct {
 }
 
 func createBackend(args WebAppArgs) WebAppReturn {
+	config := config.New(args.ctx, "")
 
 	// Cretae a new delegated subnet
 	subnet, err := network.NewSubnet(args.ctx, "foxnhound-sn-backend", &network.SubnetArgs{
@@ -237,13 +238,30 @@ func createBackend(args WebAppArgs) WebAppReturn {
 	}
 
 	// Create a Web App running a container on Linux
+	containerRegistryLogin := config.Require("backend-container-registry-login")
+	containerRegistryPassword := config.Require("backend-container-registry-password")
+	containerRegistryUrl := config.Require("backend-container-registry-url")
 	webApp, err := web.NewWebApp(args.ctx, "foxnhound-backend", &web.WebAppArgs{
 		ResourceGroupName: args.resourceGroup.Name,
 		Location:          args.resourceGroup.Location,
 		ServerFarmId:      args.appServicePlan.ID(),
 		SiteConfig: &web.SiteConfigArgs{
 			AlwaysOn:       pulumi.Bool(true),
-			LinuxFxVersion: pulumi.String("DOCKER|nginx:latest"),
+			LinuxFxVersion: pulumi.String("DOCKER|johannesrosskopp/my_private_repository:foxandhound-backend_dev_latest"),
+			AppSettings: web.NameValuePairArray{
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_URL"),
+					Value: pulumi.String(containerRegistryUrl),
+				},
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_USERNAME"),
+					Value: pulumi.String(containerRegistryLogin),
+				},
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_PASSWORD"),
+					Value: pulumi.String(containerRegistryPassword),
+				},
+			},
 		},
 		VirtualNetworkSubnetId: subnet.ID(),
 	})
@@ -255,6 +273,10 @@ func createBackend(args WebAppArgs) WebAppReturn {
 }
 
 func createFrontend(args WebAppArgs) WebAppReturn {
+	config := config.New(args.ctx, "")
+	containerRegistryLogin := config.Require("backend-container-registry-login")
+	containerRegistryPassword := config.Require("backend-container-registry-password")
+	containerRegistryUrl := config.Require("backend-container-registry-url")
 	// Create a Web App running a container on Linux
 	webApp, err := web.NewWebApp(args.ctx, "foxnhound-webapp", &web.WebAppArgs{
 		ResourceGroupName: args.resourceGroup.Name,
@@ -262,7 +284,21 @@ func createFrontend(args WebAppArgs) WebAppReturn {
 		ServerFarmId:      args.appServicePlan.ID(),
 		SiteConfig: &web.SiteConfigArgs{
 			AlwaysOn:       pulumi.Bool(true),
-			LinuxFxVersion: pulumi.String("DOCKER|nginx:latest"),
+			LinuxFxVersion: pulumi.String("DOCKER|johannesrosskopp/my_private_repository:foxandhound-webapp_dev_latest"),
+			AppSettings: web.NameValuePairArray{
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_URL"),
+					Value: pulumi.String(containerRegistryUrl),
+				},
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_USERNAME"),
+					Value: pulumi.String(containerRegistryLogin),
+				},
+				&web.NameValuePairArgs{
+					Name:  pulumi.String("DOCKER_REGISTRY_SERVER_PASSWORD"),
+					Value: pulumi.String(containerRegistryPassword),
+				},
+			},
 		},
 	})
 	if err != nil {
@@ -304,7 +340,7 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 
 	dnszone, err := network.NewPrivateZone(args.ctx, "foxnhound-private-dns-zone", &network.PrivateZoneArgs{
 		ResourceGroupName: args.resourceGroup.Name,
-		PrivateZoneName:   pulumi.String("foxnhound.mysql.database.azure.com"),
+		PrivateZoneName:   pulumi.String("foxnhound.azure.com"),
 		Location:          pulumi.String("Global"),
 	})
 	if err != nil {
@@ -341,6 +377,21 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 		},
 	},
 		pulumi.DependsOn([]pulumi.Resource{subnet, dnszone, networklink}))
+	if err != nil {
+		return MySqlServerReturn{err: err}
+	}
+
+	// Create a private DNS CNAME record for the MySQL server
+	_, err = network.NewPrivateRecordSet(args.ctx, "foxnhound-mysql-dns-record", &network.PrivateRecordSetArgs{
+		CnameRecord: &network.CnameRecordArgs{
+			Cname: dbserver.FullyQualifiedDomainName,
+		},
+		PrivateZoneName:       dnszone.Name,
+		RecordType:            pulumi.String("CNAME"),
+		RelativeRecordSetName: pulumi.String("mysql"),
+		ResourceGroupName:     args.resourceGroup.Name,
+		Ttl:                   pulumi.Float64(300),
+	})
 	if err != nil {
 		return MySqlServerReturn{err: err}
 	}
