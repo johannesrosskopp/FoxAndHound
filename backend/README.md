@@ -4,10 +4,12 @@
 
 ```
 cd backend
-docker build . -f ../infra/docker/build.Dockerfile  -t foxandhound-backend
-docker tag foxandhound-backend_alpha johannesrosskopp/my_private_repository:foxandhound-backend_alpha
-docker push johannesrosskopp/my_private_repository:foxandhound-backend_alpha
+docker build . -f ../infra/docker/build-backend.Dockerfile -t foxandhound-backend_local
+docker tag foxandhound-backend_local johannesrosskopp/my_private_repository:foxandhound-backend_dev_latest
+docker push johannesrosskopp/my_private_repository:foxandhound-backend_dev_latest
 ```
+
+for a release version also tag and push an image with a version like foxandhound-backend_dev_1_0_0
 
 ## Run databse locally
 

@@ -1,4 +1,24 @@
-# Frontend
+# Webapp
+
+## Build Frontend
+
+```bash
+cd frontend
+docker build . -f ../infra/docker/build-webapp.Dockerfile -t foxandhound-webapp_local
+docker tag foxandhound-webapp_local johannesrosskopp/my_private_repository:foxandhound-webapp_dev_latest
+docker push johannesrosskopp/my_private_repository:foxandhound-webapp_dev_latest
+```
+
+for a release version also tag and push an image with a version like foxandhound-frontend_dev_1_0_0
+
+## Run backend container with host network
+
+```bash
+docker run --network="host" foxandhound-frontend
+```
+
+
+# Angular Stuff
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.1.4.
 
