@@ -23,7 +23,13 @@ func saveRatingData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Database connection (replace with actual credentials)
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ratingdb")
+	hostname := "foxnhound-mysql-servere5a23bc8.mysql.database.azure.com"
+	port := "3306"
+	username := "sqladmin_jH5JKsj_54KJH"
+	password := "jHGJ7JKsd(sjd)jkh%"
+	dbname := "foxnhound-mysql-servere5a23bc8"
+	// db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ratingdb")
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", username, password, hostname, port, dbname))
 	if err != nil {
 		http.Error(w, "Error connecting to the database", http.StatusInternalServerError)
 		return

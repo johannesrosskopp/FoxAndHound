@@ -1,2 +1,11 @@
 config:
   azure-native:location: swedencentral
+  foxnhound:azureUserEMail: j.rosskopp@gmx.de
+  foxnhound:azureUserSid: 1685f20c-0f20-4999-aaa0-550994bcc380
+  foxnhound:azureUserTenantId: e467b6d8-cf62-4e59-9a87-758ef858aeb6
+  foxnhound:mysql-adminLogin: sqladmin_jH5JKsj_54KJH
+  foxnhound:mysql-adminSecret:
+    secure: AAABAFTDUUp/p+6IuCtcTw+z5iYMeeVTwZDvA4qceuVNVkrk4dHEvG7gV7pazEx3bto=
+  foxnhound:vm-adminLogin: exampleadmin
+  foxnhound:vm-adminSecret:
+    secure: AAABABEWbst9P/sb0BG/DyDUT2DTgr1Rnz7els8kuQoHtiC5jxgp/nBc5jeKO/ojkS9VMkQib51ExY6WlGMB

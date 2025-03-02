@@ -25,6 +25,9 @@ WORKDIR /app
 # Copy the Go binary from the builder stage
 COPY --from=builder /app/backend-build .
 
+# Copy the certs folder from the builder stage
+COPY --from=builder /app/certs /app/certs
+
 # Expose the port the app runs on
 EXPOSE 8080
 

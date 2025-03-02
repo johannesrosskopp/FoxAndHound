@@ -1,12 +1,21 @@
 package main
 
 import (
+	"github.com/pulumi/pulumi-azure-native-sdk/compute/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/dbformysql/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/network/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/resources/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/sql/v2"
 	"github.com/pulumi/pulumi-azure-native-sdk/web/v2"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+)
+
+const (
+	VNET_RANGE           = "10.0.0.0/16"
+	DB_SUBNET_RANGE      = "10.0.1.0/24"
+	BACKEND_SUBNET_RANGE = "10.0.2.0/24"
+	VM_SUBNET_RANGE      = "10.0.3.0/24"
 )
 
 func main() {
@@ -22,7 +31,7 @@ func main() {
 			ResourceGroupName: resourceGroup.Name,
 			AddressSpace: &network.AddressSpaceArgs{
 				AddressPrefixes: pulumi.StringArray{
-					pulumi.String("10.0.0.0/16"),
+					pulumi.String(VNET_RANGE),
 				},
 			},
 		})
@@ -37,37 +46,146 @@ func main() {
 		// }
 
 		// Create MySQL Server
-		returnArgs := createMySqlServer(MySqlServerArgs{
+		returnReturn := createMySqlServer(MySqlServerArgs{
 			ctx:           ctx,
 			resourceGroup: resourceGroup,
 			vnet:          vnet})
-		if returnArgs.err != nil {
-			return returnArgs.err
+		if returnReturn.err != nil {
+			return returnReturn.err
 		}
 
-		backendArgs := createBackend(WebAppArgs{
+		backendReturn := createBackend(WebAppArgs{
 			ctx:            ctx,
 			resourceGroup:  resourceGroup,
 			vnet:           vnet,
 			appServicePlan: nil,
 		})
-		if backendArgs.err != nil || backendArgs.appServicePlan == nil {
-			return backendArgs.err
+		if backendReturn.err != nil || backendReturn.appServicePlan == nil {
+			return backendReturn.err
 		}
 
-		webAppArgs := createFrontend(WebAppArgs{
+		webAppReturn := createFrontend(WebAppArgs{
 			ctx:            ctx,
 			resourceGroup:  resourceGroup,
 			vnet:           nil,
-			appServicePlan: backendArgs.appServicePlan,
+			appServicePlan: backendReturn.appServicePlan,
 		})
-		if webAppArgs.err != nil {
-			return webAppArgs.err
+		if webAppReturn.err != nil {
+			return webAppReturn.err
+		}
+
+		vmReturn := createVm(VmArgs{
+			ctx:           ctx,
+			resourceGroup: resourceGroup,
+			vnet:          vnet,
+		})
+		if vmReturn.err != nil {
+			return vmReturn.err
 		}
 
 		return nil
 	})
 
+}
+
+type VmArgs struct {
+	ctx           *pulumi.Context
+	resourceGroup *resources.ResourceGroup
+	vnet          *network.VirtualNetwork
+}
+
+type VmReturn struct {
+	vm  *compute.VirtualMachine
+	err error
+}
+
+func createVm(args VmArgs) VmReturn {
+	config := config.New(args.ctx, "")
+
+	vmSubnet, err := network.NewSubnet(args.ctx, "foxnhound-vm-subnet", &network.SubnetArgs{
+		Name:               pulumi.String("internal"),
+		ResourceGroupName:  args.resourceGroup.Name,
+		VirtualNetworkName: args.vnet.Name,
+		AddressPrefixes: pulumi.StringArray{
+			pulumi.String(VM_SUBNET_RANGE),
+		},
+	})
+	if err != nil {
+		return VmReturn{err: err}
+	}
+
+	vmPublicIp, err := network.NewPublicIPAddress(args.ctx, "foxnhound-vm-public-ip", &network.PublicIPAddressArgs{
+		// Location:            pulumi.String("eastus"),
+		// PublicIpAddressName: pulumi.String("test-ip"),
+		ResourceGroupName: args.resourceGroup.Name,
+	})
+	if err != nil {
+		return VmReturn{err: err}
+	}
+
+	vmNetworkInterface, err := network.NewNetworkInterface(args.ctx, "foxnhound-vm-network-interface", &network.NetworkInterfaceArgs{
+		// DisableTcpStateTracking:     pulumi.Bool(true),
+		// EnableAcceleratedNetworking: pulumi.Bool(true),
+		IpConfigurations: network.NetworkInterfaceIPConfigurationArray{
+			&network.NetworkInterfaceIPConfigurationArgs{
+				Name: pulumi.String("ipconfig1"),
+				PublicIPAddress: &network.PublicIPAddressTypeArgs{
+					Id: vmPublicIp.ID(),
+				},
+				Subnet: &network.SubnetTypeArgs{
+					Id: vmSubnet.ID(),
+				},
+			},
+		},
+		// Location:             pulumi.String("eastus"),
+		// NetworkInterfaceName: pulumi.String("test-nic"),
+		ResourceGroupName: args.resourceGroup.Name,
+	})
+	if err != nil {
+		return VmReturn{err: err}
+	}
+
+	adminLogin := config.Require("vm-adminLogin")
+	adminSecret := config.Require("vm-adminSecret")
+	// Create the Azure Stack HCI Virtual Machine
+	vm, err := compute.NewVirtualMachine(args.ctx, "foxnhound-vm", &compute.VirtualMachineArgs{
+		ResourceGroupName: args.resourceGroup.Name,
+		NetworkProfile: compute.NetworkProfileArgs{
+			NetworkInterfaces: &compute.NetworkInterfaceReferenceArray{
+				&compute.NetworkInterfaceReferenceArgs{
+					Id: vmNetworkInterface.ID(),
+				},
+			},
+		},
+		HardwareProfile: &compute.HardwareProfileArgs{
+			VmSize: pulumi.String("Standard_DS1_v2"),
+		},
+		OsProfile: &compute.OSProfileArgs{
+			ComputerName:  pulumi.String("foxnhound-vm"),
+			AdminUsername: pulumi.String(adminLogin),
+			AdminPassword: pulumi.String(adminSecret),
+			// CustomData:    pulumi.String(b64Encode("#!/bin/bash\nsudo apt-get update\nsudo apt-get install -y mysql-client")),
+		},
+		StorageProfile: &compute.StorageProfileArgs{
+			OsDisk: compute.OSDiskArgs{
+				CreateOption: pulumi.String("FromImage"),
+				ManagedDisk: &compute.ManagedDiskParametersArgs{
+					StorageAccountType: pulumi.String("Standard_LRS"),
+				},
+			},
+			ImageReference: &compute.ImageReferenceArgs{
+				Publisher: pulumi.String("Canonical"),
+				Offer:     pulumi.String("UbuntuServer"),
+				Sku:       pulumi.String("18.04-LTS"),
+				Version:   pulumi.String("latest"),
+			},
+		},
+	})
+	if err != nil {
+		return VmReturn{err: err}
+	}
+
+	return VmReturn{vm: vm}
 }
 
 type WebAppArgs struct {
@@ -95,7 +213,7 @@ func createBackend(args WebAppArgs) WebAppReturn {
 		},
 		ResourceGroupName:  args.resourceGroup.Name,
 		VirtualNetworkName: args.vnet.Name,
-		AddressPrefix:      pulumi.String("10.0.2.0/24"),
+		AddressPrefix:      pulumi.String(BACKEND_SUBNET_RANGE),
 	})
 	if err != nil {
 		return WebAppReturn{err: err}
@@ -166,6 +284,7 @@ type MySqlServerReturn struct {
 }
 
 func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
+	conf := config.New(args.ctx, "")
 
 	// Cretae a new delegated subnet
 	subnet, err := network.NewSubnet(args.ctx, "foxnhound-sn-db", &network.SubnetArgs{
@@ -177,7 +296,7 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 		},
 		ResourceGroupName:  args.resourceGroup.Name,
 		VirtualNetworkName: args.vnet.Name,
-		AddressPrefix:      pulumi.String("10.0.1.0/24"),
+		AddressPrefix:      pulumi.String(DB_SUBNET_RANGE),
 	})
 	if err != nil {
 		return MySqlServerReturn{err: err}
@@ -205,9 +324,11 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 		return MySqlServerReturn{err: err}
 	}
 
+	adminLogin := conf.Require("mysql-adminLogin")
+	adminSecret := conf.Require("mysql-adminSecret")
 	dbserver, err := dbformysql.NewServer(args.ctx, "foxnhound-mysql-server", &dbformysql.ServerArgs{
-		AdministratorLogin:         pulumi.String("sqladmin_jH5JKsj_54KJH"),
-		AdministratorLoginPassword: pulumi.String("jHGJ7JKsd(sjd)jkh%"),
+		AdministratorLogin:         pulumi.String(adminLogin),
+		AdministratorLoginPassword: pulumi.String(adminSecret),
 		ResourceGroupName:          args.resourceGroup.Name,
 		Sku: &dbformysql.SkuArgs{
 			Name: pulumi.String("Standard_B1ms"),
@@ -251,22 +372,27 @@ type SqlServerReturn struct {
 }
 
 func createSqlServer(args SqlServerArgs) SqlServerReturn {
+	config := config.New(args.ctx, "")
+
 	subnet, err := network.NewSubnet(args.ctx, "foxnhound-subnet", &network.SubnetArgs{
 		ResourceGroupName:  args.resourceGroup.Name,
 		VirtualNetworkName: args.vnet.Name,
-		AddressPrefix:      pulumi.String("10.0.1.0/24"),
+		AddressPrefix:      pulumi.String(DB_SUBNET_RANGE),
 	})
 	if err != nil {
 		return SqlServerReturn{err: err}
 	}
 
+	azureUserEMail := config.Require("azureUserEMail")
+	azureUserSid := config.Require("azureUserSid")
+	azureUserTenantId := config.Require("azureUserTenantId")
 	dbserver, err := sql.NewServer(args.ctx, "foxnhound-db-server", &sql.ServerArgs{
 		Administrators: &sql.ServerExternalAdministratorArgs{
 			AzureADOnlyAuthentication: pulumi.Bool(true),
-			Login:                     pulumi.String("j.rosskopp@gmx.de"),
+			Login:                     pulumi.String(azureUserEMail),
 			PrincipalType:             pulumi.String(sql.PrincipalTypeUser),
-			Sid:                       pulumi.String("1685f20c-0f20-4999-aaa0-550994bcc380"),
-			TenantId:                  pulumi.String("e467b6d8-cf62-4e59-9a87-758ef858aeb6"),
+			Sid:                       pulumi.String(azureUserSid),
+			TenantId:                  pulumi.String(azureUserTenantId),
 		},
 		PublicNetworkAccess:           pulumi.String(sql.ServerNetworkAccessFlagDisabled),
 		ResourceGroupName:             args.resourceGroup.Name,

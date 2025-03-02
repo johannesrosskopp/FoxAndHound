@@ -7,9 +7,8 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				// "ms-azuretools.vscode-azurefunctions",
-				// "hashicorp.terraform",
-				"pulumi.pulumi-vscode-tools"
+				"pulumi.pulumi-vscode-tools",
+				"golang.go"
 			]
 		}
 	},

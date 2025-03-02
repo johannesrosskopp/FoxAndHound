@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/pulumi/pulumi-azure-native-sdk/resources/v2 v2.42.1
 	github.com/pulumi/pulumi-azure-native-sdk/storage/v2 v2.42.1
-	github.com/pulumi/pulumi/sdk/v3 v3.150.0
+	github.com/pulumi/pulumi/sdk/v3 v3.153.1
 )
 
 require (
@@ -62,10 +62,12 @@ require (
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.9.1 // indirect
+	github.com/pulumi/pulumi-azure-native-sdk/azurestackhci/v2 v2.89.0 // indirect
+	github.com/pulumi/pulumi-azure-native-sdk/compute/v2 v2.89.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/dbformysql/v2 v2.88.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/network/v2 v2.88.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/sql/v2 v2.88.0 // indirect
-	github.com/pulumi/pulumi-azure-native-sdk/v2 v2.88.0 // indirect
+	github.com/pulumi/pulumi-azure-native-sdk/v2 v2.89.0 // indirect
 	github.com/pulumi/pulumi-azure-native-sdk/web/v2 v2.88.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -73,6 +75,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
+	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect

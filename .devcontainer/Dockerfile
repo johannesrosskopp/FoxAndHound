@@ -1,4 +1,18 @@
-FROM mcr.microsoft.com/devcontainers/go:1-1.23-bookworm
+FROM mcr.microsoft.com/devcontainers/base:bullseye
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    gnupg \
+    software-properties-common
+
+# Install Go 1.23.5
+RUN wget https://go.dev/dl/go1.23.5.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz \
+    && rm go1.23.5.linux-amd64.tar.gz
+
+ENV PATH "$PATH:/usr/local/go/bin"
 
 # Install Azure CLI
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
