@@ -16,7 +16,6 @@ ENV PATH "$PATH:/usr/local/go/bin"
 
 # Switch to the vscode user
 USER vscode
-
 # Install NVM and Node.js for the vscode user
 ENV NODE_VERSION=22
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -26,9 +25,6 @@ RUN . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
 RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/home/vscode/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 RUN . "$NVM_DIR/nvm.sh" && npm install -g @angular/cli
-# RUN node --version
-# RUN npm --version
-
 # Switch back to root to install Azure CLI and other tools
 USER root
 
