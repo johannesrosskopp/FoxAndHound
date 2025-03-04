@@ -31,12 +31,12 @@ func GetDb() *gorm.DB {
 }
 
 func init() {
-	hostname := "foxnhound-mysql-servere5a23bc8.mysql.database.azure.com"
-	// hostname := "foxnhound.mysql.database.azure.com"
+	// hostname := "mysql.foxnhound.mysql.database.azure.com"
+	hostname := "foxnhound-mysql-servera899faa2.mysql.database.azure.com"
 	port := "3306"
 	username := "sqladmin_jH5JKsj_54KJH"
 	password := "jHGJ7JKsd(sjd)jkh%"
-	dbname := "foxnhound-mysql-servere5a23bc8"
+	dbname := "foxnhound-db"
 	caCertPath := "certs/DigiCertGlobalRootCA.crt.pem"
 	// dsn := "devuser:devpassword@tcp(127.0.0.1:3306)/fox_and_hound?charset=utf8mb4&parseTime=True&loc=Local"
 

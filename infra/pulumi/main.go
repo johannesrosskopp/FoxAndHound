@@ -340,7 +340,7 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 
 	dnszone, err := network.NewPrivateZone(args.ctx, "foxnhound-private-dns-zone", &network.PrivateZoneArgs{
 		ResourceGroupName: args.resourceGroup.Name,
-		PrivateZoneName:   pulumi.String("foxnhound.azure.com"),
+		PrivateZoneName:   pulumi.String("foxnhound.mysql.database.azure.com"),
 		Location:          pulumi.String("Global"),
 	})
 	if err != nil {
@@ -382,25 +382,25 @@ func createMySqlServer(args MySqlServerArgs) MySqlServerReturn {
 	}
 
 	// Create a private DNS CNAME record for the MySQL server
-	_, err = network.NewPrivateRecordSet(args.ctx, "foxnhound-mysql-dns-record", &network.PrivateRecordSetArgs{
-		CnameRecord: &network.CnameRecordArgs{
-			Cname: dbserver.FullyQualifiedDomainName,
-		},
-		PrivateZoneName:       dnszone.Name,
-		RecordType:            pulumi.String("CNAME"),
-		RelativeRecordSetName: pulumi.String("mysql"),
-		ResourceGroupName:     args.resourceGroup.Name,
-		Ttl:                   pulumi.Float64(300),
-	})
-	if err != nil {
-		return MySqlServerReturn{err: err}
-	}
+	// TODO: Would be sexy to have a fixed dns for the db but requires a self-signed cert, meh
+	// _, err = network.NewPrivateRecordSet(args.ctx, "foxnhound-mysql-dns-record", &network.PrivateRecordSetArgs{
+	// 	CnameRecord: &network.CnameRecordArgs{
+	// 		Cname: dbserver.FullyQualifiedDomainName,
+	// 	},
+	// 	PrivateZoneName:       dnszone.Name,
+	// 	RecordType:            pulumi.String("CNAME"),
+	// 	RelativeRecordSetName: pulumi.String("mysql"),
+	// 	ResourceGroupName:     args.resourceGroup.Name,
+	// 	Ttl:                   pulumi.Float64(300),
+	// }, pulumi.DependsOn([]pulumi.Resource{dbserver, dnszone}))
+	// if err != nil {
+	// 	return MySqlServerReturn{err: err}
+	// }
 
 	_, err = dbformysql.NewDatabase(args.ctx, "foxnhound-db", &dbformysql.DatabaseArgs{
 		Charset:           pulumi.String("utf8"),
 		Collation:         pulumi.String("utf8_general_ci"),
 		ServerName:        dbserver.Name,
-		DatabaseName:      dbserver.Name,
 		ResourceGroupName: args.resourceGroup.Name,
 	})
 	if err != nil {
